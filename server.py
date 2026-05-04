@@ -63,7 +63,6 @@ def purchasePlaces():
     placesRequired = int(request.form["places"])
     competition["numberOfPlaces"] = int(competition["numberOfPlaces"]) - placesRequired
     competitionPlaces = int(competition["numberOfPlaces"])
-    flash("Great-booking complete!")
 
     # BUG FIX: Clubs should not be able to book 0 or negative places
     if placesRequired <= 0:
@@ -79,6 +78,8 @@ def purchasePlaces():
     if placesRequired > competitionPlaces:
         flash("Not enough places available in this competition.")
         return render_template("welcome.html", club=club, competitions=competitions)
+
+    flash("Great-booking complete!")
 
     return render_template("welcome.html", club=club, competitions=competitions)
 
