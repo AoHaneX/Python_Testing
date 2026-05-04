@@ -29,7 +29,7 @@ def index():
 
 @app.route("/showSummary", methods=["POST"])
 def showSummary():
-    # ERROR FIX: Entering an unknown email crashes the app
+    # BUG FIX: Entering an unknown email crashes the app
     club = next(
         (club for club in clubs if club["email"] == request.form["email"]), None
     )
