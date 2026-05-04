@@ -29,7 +29,7 @@ def index():
 
 @app.route("/showSummary", methods=["POST"])
 def showSummary():
-    # ERROR FIX: Entering an unknown email crashes the app
+    # BUG FIX: Entering an unknown email crashes the app
     club = next(
         (club for club in clubs if club["email"] == request.form["email"]), None
     )
@@ -62,7 +62,24 @@ def purchasePlaces():
     club = [c for c in clubs if c["name"] == request.form["club"]][0]
     placesRequired = int(request.form["places"])
     competition["numberOfPlaces"] = int(competition["numberOfPlaces"]) - placesRequired
+    competitionPlaces = int(competition["numberOfPlaces"])
     flash("Great-booking complete!")
+
+    # BUG FIX: Clubs should not be able to book 0 or negative places
+    if placesRequired <= 0:
+        flash("You must book at least 1 place.")
+        return render_template("welcome.html", club=club, competitions=competitions)
+
+    # BUG FIX: Clubs should not be able to book more than 12 places per competition
+    if placesRequired > 12:
+        flash("You cannot book more than 12 places per competition.")
+        return render_template("welcome.html", club=club, competitions=competitions)
+
+    # BUG FIX: Clubs should not be able to book more places than available in the competition
+    if placesRequired > competitionPlaces:
+        flash("Not enough places available in this competition.")
+        return render_template("welcome.html", club=club, competitions=competitions)
+
     return render_template("welcome.html", club=club, competitions=competitions)
 
 
