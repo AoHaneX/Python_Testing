@@ -1,4 +1,3 @@
-import email
 import json
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, flash, url_for
@@ -38,16 +37,18 @@ def showSummary():
         flash("Email not found, please try again.")
         return redirect(url_for("index"))
 
-    return render_template("welcome.html", club=club, competitions=competitions)
+    return render_template(
+        "welcome.html",
+        club=club,
+        competitions=competitions,
+        now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    )
 
 
 @app.route("/book/<competition>/<club>")
 def book(competition, club):
     foundClub = next((c for c in clubs if c["name"] == club), None)
-    foundCompetition = next(
-        (c for c in competitions if c["name"] == competition),
-        None
-    )
+    foundCompetition = next((c for c in competitions if c["name"] == competition), None)
     if not foundClub or not foundCompetition:
         flash("Something went wrong - please try again")
         return render_template(
@@ -67,13 +68,9 @@ def book(competition, club):
 @app.route("/purchasePlaces", methods=["POST"])
 def purchasePlaces():
     competition = next(
-        (c for c in competitions if c["name"] == request.form["competition"]),
-        None
+        (c for c in competitions if c["name"] == request.form["competition"]), None
     )
-    club = next(
-        (c for c in clubs if c["name"] == request.form["club"]),
-        None
-    )
+    club = next((c for c in clubs if c["name"] == request.form["club"]), None)
 
     if not club or not competition:
         flash("Something went wrong - please try again.")
@@ -83,36 +80,35 @@ def purchasePlaces():
         placesRequired = int(request.form["places"])
     except ValueError:
         flash("Invalid number of places.")
-        return render_template("welcome.html", club=club, competitions=competitions)
+        return render_template(
+            "welcome.html",
+            club=club,
+            competitions=competitions,
+            now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        )
 
-    competitionPlaces = int(competition["numberOfPlaces"])
-    clubPoints = int(club["points"])
+    is_valid, message = validate_booking(club, competition, placesRequired)
 
-    # BUG FIX: Clubs should not be able to book 0 or negative places
-    if placesRequired <= 0:
-        flash("You must book at least 1 place.")
-        return render_template("welcome.html", club=club, competitions=competitions)
+    if not is_valid:
+        flash(message)
+        return render_template(
+            "welcome.html",
+            club=club,
+            competitions=competitions,
+            now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        )
 
-    # BUG FIX: Clubs should not be able to book more than 12 places per competition
-    if placesRequired > 12:
-        flash("You cannot book more than 12 places per competition.")
-        return render_template("welcome.html", club=club, competitions=competitions)
+    competition["numberOfPlaces"] = int(competition["numberOfPlaces"]) - placesRequired
+    club["points"] = int(club["points"]) - placesRequired
 
-    # BUG FIX: Clubs should not be able to book more places than available
-    if placesRequired > competitionPlaces:
-        flash("Not enough places available in this competition.")
-        return render_template("welcome.html", club=club, competitions=competitions)
+    flash("Great - booking complete!")
+    return render_template(
+        "welcome.html",
+        club=club,
+        competitions=competitions,
+        now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    )
 
-    # BUG FIX: Clubs should not be able to use more than their points allowed
-    if placesRequired > clubPoints:
-        flash("Not enough points available.")
-        return render_template("welcome.html", club=club, competitions=competitions)
-
-    competition["numberOfPlaces"] = competitionPlaces - placesRequired
-    club["points"] = clubPoints - placesRequired
-
-    flash("Great-booking complete!")
-    return render_template("welcome.html", club=club, competitions=competitions)
 
 # TODO: Add route for points display
 
@@ -137,7 +133,6 @@ def is_past_competition(competition):
     """
     competition_date = datetime.strptime(competition["date"], "%Y-%m-%d %H:%M:%S")
     return competition_date < datetime.now()
-
 
 
 def validate_booking(club, competition, places_requested):
