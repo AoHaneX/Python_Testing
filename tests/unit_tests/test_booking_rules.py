@@ -79,3 +79,21 @@ def test_valid_booking_is_accepted():
     is_valid, message = validate_booking(club, competition, 2)
     assert is_valid is True
     assert message == ""
+
+
+def test_booking_more_points_than_available_is_rejected():
+    club = {
+        "name": "Iron Temple",
+        "points": "4"
+    }
+
+    competition = {
+        "name": "Future Competition",
+        "date": "2030-03-27 10:00:00",
+        "numberOfPlaces": "20"
+    }
+
+    is_valid, message = validate_booking(club, competition, 5)
+
+    assert is_valid is False
+    assert message == "Not enough points"

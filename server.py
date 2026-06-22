@@ -141,6 +141,9 @@ def validate_booking(club, competition, places_requested):
 
     if places_requested <= 0:
         return False, "You must book at least 1 place"
+    
+    if places_requested > club_points:
+        return False, "Not enough points"
 
     if is_past_competition(competition):
         return False, "You cannot book places in a past competition"
