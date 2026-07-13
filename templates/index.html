@@ -15,6 +15,7 @@
         <input type="email" name="email" id="" />
         <button type="submit">Enter</button>
     </form>
+    {% include "points_board.html" %}
 
     <!-- FIX: Display flash messages as a popup -->
     {% with messages = get_flashed_messages() %}
