@@ -30,21 +30,25 @@ def index():
 @app.route("/showSummary", methods=["POST"])
 def showSummary():
     # BUG FIX: Entering an unknown email crashes the app
-    club = next(
-        (club for club in clubs if club["email"] == request.form["email"]), None
-    )
+    email = request.form["email"].strip().lower()
+    club = get_club_by_email(email)
     if not club:
         # Error message if email is not found
         flash("Email not found, please try again.")
         return redirect(url_for("index"))
 
-    return render_template("welcome.html", club=club, competitions=competitions)
+    return render_template(
+        "welcome.html",
+        club=club,
+        competitions=competitions,
+        now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    )
 
 
 @app.route("/book/<competition>/<club>")
 def book(competition, club):
-    foundClub = [c for c in clubs if c["name"] == club][0]
-    foundCompetition = [c for c in competitions if c["name"] == competition][0]
+    foundClub = next((c for c in clubs if c["name"] == club), None)
+    foundCompetition = next((c for c in competitions if c["name"] == competition), None)
     if not foundClub or not foundCompetition:
         flash("Something went wrong - please try again")
         return render_template(
@@ -52,8 +56,7 @@ def book(competition, club):
         )
 
     # BUG FIX: Booking places in past competitions
-    competition_date = datetime.strptime(foundCompetition["date"], "%Y-%m-%d %H:%M:%S")
-    if competition_date < datetime.now():
+    if is_past_competition(foundCompetition):
         flash("You cannot book places for a past competition.")
         return render_template(
             "welcome.html", club=foundClub, competitions=competitions
@@ -72,20 +75,27 @@ def purchasePlaces():
     competition["numberOfPlaces"] = int(competition["numberOfPlaces"]) - placesRequired
     competitionPlaces = int(competition["numberOfPlaces"])
 
-    # BUG FIX: Clubs should not be able to book 0 or negative places
-    if placesRequired <= 0:
-        flash("You must book at least 1 place.")
-        return render_template("welcome.html", club=club, competitions=competitions)
+    try:
+        placesRequired = int(request.form["places"])
+    except ValueError:
+        flash("Invalid number of places.")
+        return render_template(
+            "welcome.html",
+            club=club,
+            competitions=competitions,
+            now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        )
 
-    # BUG FIX: Clubs should not be able to book more than 12 places per competition
-    if placesRequired > 12:
-        flash("You cannot book more than 12 places per competition.")
-        return render_template("welcome.html", club=club, competitions=competitions)
+    is_valid, message = validate_booking(club, competition, placesRequired)
 
-    # BUG FIX: Clubs should not be able to book more places than available in the competition
-    if placesRequired > competitionPlaces:
-        flash("Not enough places available in this competition.")
-        return render_template("welcome.html", club=club, competitions=competitions)
+    if not is_valid:
+        flash(message)
+        return render_template(
+            "welcome.html",
+            club=club,
+            competitions=competitions,
+            now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        )
 
     flash("Great-booking complete!")
 
@@ -98,3 +108,45 @@ def purchasePlaces():
 @app.route("/logout")
 def logout():
     return redirect(url_for("index"))
+
+
+def get_club_by_email(email):
+    """
+    Searches for a club by email in the global clubs list.
+    Returns the club dict if found, None otherwise.
+    """
+    return next((c for c in clubs if c["email"].lower() == email), None)
+
+
+def is_past_competition(competition):
+    """
+    Checks if a competition date is in the past.
+    Returns True if the competition is past, False otherwise.
+    """
+    competition_date = datetime.strptime(competition["date"], "%Y-%m-%d %H:%M:%S")
+    return competition_date < datetime.now()
+
+
+def validate_booking(club, competition, places_requested):
+    available_places = int(competition["numberOfPlaces"])
+    club_points = int(club["points"])
+
+    if places_requested <= 0:
+        return False, "You must book at least 1 place"
+    
+    if places_requested > club_points:
+        return False, "Not enough points"
+
+    if is_past_competition(competition):
+        return False, "You cannot book places in a past competition"
+
+    if places_requested > 12:
+        return False, "You cannot book more than 12 places per competition"
+
+    if places_requested > available_places:
+        return False, "Not enough places available"
+
+    if places_requested > club_points:
+        return False, "Not enough points"
+
+    return True, ""
