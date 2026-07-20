@@ -2,35 +2,28 @@ import json
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, flash, url_for
 
-
-def loadClubs():
-    with open("clubs.json") as c:
-        listOfClubs = json.load(c)["clubs"]
-        return listOfClubs
+CLUBS_FILE = "clubs.json"
+COMPETITIONS_FILE = "competitions.json"
 
 
-def loadCompetitions():
-    with open("competitions.json") as comps:
-        listOfCompetitions = json.load(comps)["competitions"]
-        return listOfCompetitions
+def loadClubs(file_path=CLUBS_FILE):
+    with open(file_path, encoding="utf-8") as file:
+        return json.load(file)["clubs"]
 
 
-def saveClubs():
-    with open("clubs.json", "w") as file:
+def loadCompetitions(file_path=COMPETITIONS_FILE):
+    with open(file_path, encoding="utf-8") as file:
+        return json.load(file)["competitions"]
+
+
+def saveClubs(file_path=CLUBS_FILE):
+    with open(file_path, "w", encoding="utf-8") as file:
         json.dump({"clubs": clubs}, file, indent=4)
 
 
-def saveCompetitions():
-    with open("competitions.json", "w") as file:
+def saveCompetitions(file_path=COMPETITIONS_FILE):
+    with open(file_path, "w", encoding="utf-8") as file:
         json.dump({"competitions": competitions}, file, indent=4)
-
-
-def updateBooking(club, competition, placesRequested):
-    competition["numberOfPlaces"] = str(
-        int(competition["numberOfPlaces"]) - placesRequested
-    )
-
-    club["points"] = str(int(club["points"]) - placesRequested)
 
 
 app = Flask(__name__)
@@ -136,7 +129,12 @@ def get_club_by_email(email):
     Searches for a club by email in the global clubs list.
     Returns the club dict if found, None otherwise.
     """
-    return next((c for c in clubs if c["email"].lower() == email), None)
+    normalized_email = email.strip().lower()
+
+    return next(
+        (club for club in clubs if club["email"].strip().lower() == normalized_email),
+        None,
+    )
 
 
 def is_past_competition(competition):
@@ -154,9 +152,6 @@ def validate_booking(club, competition, places_requested):
 
     if places_requested <= 0:
         return False, "You must book at least 1 place"
-
-    if places_requested > club_points:
-        return False, "Not enough points"
 
     if is_past_competition(competition):
         return False, "You cannot book places in a past competition"

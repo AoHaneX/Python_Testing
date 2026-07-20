@@ -1,5 +1,6 @@
 import pytest
 
+import server
 from server import app
 
 
@@ -12,37 +13,47 @@ def client():
 
 
 @pytest.fixture
-def sample_club():
-    return {"name": "Simply Lift", "email": "john@simplylift.co", "points": "13"}
+def isolated_data(monkeypatch):
+    test_clubs = [
+        {
+            "name": "Simply Lift",
+            "email": "john@simplylift.co",
+            "points": "13",
+        },
+        {
+            "name": "Iron Temple",
+            "email": "admin@irontemple.com",
+            "points": "4",
+        },
+        {
+            "name": "She Lifts",
+            "email": "kate@shelifts.co.uk",
+            "points": "12",
+        },
+    ]
 
+    test_competitions = [
+        {
+            "name": "Future Competition",
+            "date": "2099-03-27 10:00:00",
+            "numberOfPlaces": "25",
+        },
+        {
+            "name": "Past Competition",
+            "date": "2020-03-27 10:00:00",
+            "numberOfPlaces": "25",
+        },
+        {
+            "name": "Limited Competition",
+            "date": "2099-03-27 10:00:00",
+            "numberOfPlaces": "3",
+        },
+    ]
 
-@pytest.fixture
-def low_points_club():
-    return {"name": "Iron Temple", "email": "admin@irontemple.com", "points": "4"}
+    monkeypatch.setattr(server, "clubs", test_clubs)
+    monkeypatch.setattr(server, "competitions", test_competitions)
 
+    monkeypatch.setattr(server, "saveClubs", lambda: None)
+    monkeypatch.setattr(server, "saveCompetitions", lambda: None)
 
-@pytest.fixture
-def future_competition():
-    return {
-        "name": "Future Competition",
-        "date": "2030-03-27 10:00:00",
-        "numberOfPlaces": "25",
-    }
-
-
-@pytest.fixture
-def past_competition():
-    return {
-        "name": "Past Competition",
-        "date": "2020-03-27 10:00:00",
-        "numberOfPlaces": "25",
-    }
-
-
-@pytest.fixture
-def limited_places_competition():
-    return {
-        "name": "Limited Places Competition",
-        "date": "2030-10-22 13:30:00",
-        "numberOfPlaces": "3",
-    }
+    return test_clubs, test_competitions
