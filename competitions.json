@@ -9,6 +9,21 @@
             "name": "Fall Classic",
             "date": "2020-10-22 13:30:00",
             "numberOfPlaces": "13"
+        },
+        {
+            "name": "Goultarminator",
+            "date": "2027-12-12 13:30:00",
+            "numberOfPlaces": "17"
+        },
+        {
+            "name": "League of Arams",
+            "date": "2028-6-12 13:30:00",
+            "numberOfPlaces": "1"
+        },
+        {
+            "name": "Performance Competition",
+            "date": "2999-12-12 13:30:00",
+            "numberOfPlaces": "9613"
         }
     ]
 }
