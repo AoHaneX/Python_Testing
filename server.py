@@ -85,14 +85,13 @@ def book(competition, club):
 
 @app.route("/purchasePlaces", methods=["POST"])
 def purchasePlaces():
-    competition = next(
-        (c for c in competitions if c["name"] == request.form["competition"]), None
-    )
-    club = next((c for c in clubs if c["name"] == request.form["club"]), None)
-
-    if not club or not competition:
-        flash("Something went wrong - please try again.")
-        return redirect(url_for("index"))
+    competition = [c for c in competitions if c["name"] == request.form["competition"]][
+        0
+    ]
+    club = [c for c in clubs if c["name"] == request.form["club"]][0]
+    placesRequired = int(request.form["places"])
+    competition["numberOfPlaces"] = int(competition["numberOfPlaces"]) - placesRequired
+    competitionPlaces = int(competition["numberOfPlaces"])
 
     try:
         placesRequired = int(request.form["places"])
@@ -117,20 +116,9 @@ def purchasePlaces():
             now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         )
 
-    updateBooking(club, competition, placesRequired)
+    flash("Great-booking complete!")
 
-    saveClubs()
-    saveCompetitions()
-
-    flash("Great - booking complete!")
-
-    return render_template(
-        "welcome.html",
-        club=club,
-        clubs=clubs,
-        competitions=competitions,
-        now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    )
+    return render_template("welcome.html", club=club, competitions=competitions)
 
 
 @app.route("/points")
