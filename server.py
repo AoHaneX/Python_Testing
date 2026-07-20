@@ -15,6 +15,24 @@ def loadCompetitions():
         return listOfCompetitions
 
 
+def saveClubs():
+    with open("clubs.json", "w") as file:
+        json.dump({"clubs": clubs}, file, indent=4)
+
+
+def saveCompetitions():
+    with open("competitions.json", "w") as file:
+        json.dump({"competitions": competitions}, file, indent=4)
+
+
+def updateBooking(club, competition, placesRequested):
+    competition["numberOfPlaces"] = str(
+        int(competition["numberOfPlaces"]) - placesRequested
+    )
+
+    club["points"] = str(int(club["points"]) - placesRequested)
+
+
 app = Flask(__name__)
 app.secret_key = "something_special"
 
@@ -29,7 +47,6 @@ def index():
 
 @app.route("/showSummary", methods=["POST"])
 def showSummary():
-    # BUG FIX: Entering an unknown email crashes the app
     email = request.form["email"].strip().lower()
     club = get_club_by_email(email)
     if not club:
@@ -133,7 +150,7 @@ def validate_booking(club, competition, places_requested):
 
     if places_requested <= 0:
         return False, "You must book at least 1 place"
-    
+
     if places_requested > club_points:
         return False, "Not enough points"
 
@@ -150,3 +167,10 @@ def validate_booking(club, competition, places_requested):
         return False, "Not enough points"
 
     return True, ""
+
+
+def updateBooking(club, competition, places_requested):
+    competition["numberOfPlaces"] = str(
+        int(competition["numberOfPlaces"]) - places_requested
+    )
+    club["points"] = str(int(club["points"]) - places_requested)
